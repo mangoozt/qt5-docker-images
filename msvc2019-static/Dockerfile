@@ -11,9 +11,6 @@ RUN powershell.exe -ExecutionPolicy Bypass -Command "iwr https://aka.ms/vs/16/re
 
 CMD ["C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\BuildTools\\VC\\Auxiliary\\Build\\vcvars64.bat", "&&", "cmd"]
 
-# Use the latest Windows Server Core image.
-##FROM mangoozt/msvc-base:${SERVERCORE_VERSION} as build
-
 FROM msvc as build
 ARG QT5_VERSION=5.15.1
 
@@ -34,20 +31,22 @@ RUN git clone https://code.qt.io/qt/qt5.git qt5-git `
 && git checkout %QT5_VERSION% `
 && perl init-repository --module-subset=default,-qtwebengine,-qttools,-qtspeech
 
+SHELL ["cmd","/C"]
 # Build Qt5
 WORKDIR C:\qtbuild
-RUN "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Auxiliary\Build\vcvars64.bat" `
+RUN ""C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Auxiliary\Build\vcvars64.bat" `
 && C:\qt5-git\configure.bat -release -opensource -confirm-license -static -no-pch -optimize-size -opengl desktop -prefix "C:\Qt5" -skip webengine -nomake tools -nomake tests -nomake examples -skip qtspeech `
 && echo Build on %NUMBER_OF_PROCESSORS% cores `
 && jom /J %NUMBER_OF_PROCESSORS% `
-&& jom /J %NUMBER_OF_PROCESSORS% install
+&& jom /J %NUMBER_OF_PROCESSORS% install"
 
 FROM msvc
 ARG QT5_VERSION=5.15.1
 # Copying Qt5 objects & setting ENV
-COPY --from=build C:\Qt5 C:\Qt5\%QT5_VERSION%\msvc2019-static
+COPY --from=build C:\Qt5 C:\Qt5\${QT5_VERSION}\msvc2019-static
 
 RUN setx /M Qt5_DIR C:\Qt5\%QT5_VERSION%\msvc2019-static
-RUN echo %Qt5_DIR%
+SHELL ["cmd","/C"]
 
-ENTRYPOINT C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Auxiliary\Build\vcvars64.bat
+ENTRYPOINT ""C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Auxiliary\Build\vcvars64.bat" &&
+CMD cmd
